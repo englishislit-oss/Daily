@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dailies</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Dailies: Habit Tracker and Daily Schedule">
+<meta name="theme-color" content="#8B5CF6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dailies">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #FAF5FF; }
+  #qp-root { border-radius: 0 !important; min-height: 100vh !important; }
+</style>
+</head>
+<body>
+<style>
+  #qp-root, #qp-root * { box-sizing: border-box; }
+  #qp-root {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #FAF5FF;
+    color: #2E2148;
+    border-radius: 16px;
+    padding: 0;
+    min-height: 640px;
+    overflow: hidden;
+  }
+  #qp-root h1, #qp-root h2, #qp-root h3, .qp-num { font-family: 'Sora', system-ui, sans-serif; }
+  .qp-shell { max-width: 880px; margin: 0 auto; padding: 28px 22px 60px; }
+
+  .qp-topline { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 10px; }
+  .qp-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .qp-title span { color: #E8A400; }
+  .qp-sub { font-size: 13px; color: #8A7CA8; }
+
+  .qp-tabs { display: flex; gap: 4px; border-bottom: 1px solid #EFE6FB; margin-bottom: 26px; }
+  .qp-tab {
+    background: none; border: none; color: #8A7CA8; font-family: 'Inter', sans-serif;
+    font-size: 14.5px; font-weight: 500; padding: 10px 4px; margin-right: 22px;
+    cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+  }
+  .qp-tab:hover { color: #2E2148; }
+  .qp-tab.active { color: #2E2148; border-bottom-color: #8B5CF6; }
+  .qp-tab.qp-hidden { display: none; }
+
+  .qp-sysswitch { display: inline-flex; background: #F3ECFC; border: 1px solid #E1D3F5; border-radius: 10px; padding: 3px; margin-bottom: 18px; }
+  .qp-sysbtn {
+    background: none; border: none; color: #8A7CA8; font-family: 'Inter', sans-serif; font-weight: 500;
+    font-size: 13px; padding: 7px 14px; border-radius: 7px; cursor: pointer; transition: all .15s;
+  }
+  .qp-sysbtn.active { background: #F5B700; color: #2E2148; }
+  .qp-sysnote { font-size: 12.5px; color: #9A8CB5; margin: -10px 0 22px; }
+
+  /* ---- Today tab ---- */
+  .qp-daynav { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+  .qp-iconbtn {
+    background: #F3ECFC; border: 1px solid #E1D3F5; color: #2E2148; width: 34px; height: 34px;
+    border-radius: 9px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .qp-iconbtn:hover { background: #ECE1FA; }
+  .qp-daylabel { font-size: 17px; font-weight: 600; flex: 1; }
+  .qp-daylabel .qp-datesub { font-size: 12.5px; color: #8A7CA8; font-weight: 400; margin-left: 8px; }
+  .qp-datepick {
+    background: #F3ECFC; border: 1px solid #E1D3F5; color: #2E2148; border-radius: 8px;
+    padding: 6px 10px; font-family: 'Inter', sans-serif; font-size: 13px;
+  }
+  .qp-todaybtn {
+    background: none; border: 1px solid #E1D3F5; color: #8A7CA8; border-radius: 8px;
+    padding: 6px 12px; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .qp-todaybtn:hover { color: #2E2148; border-color: #8B5CF6; }
+
+  .qp-hero { display: flex; align-items: center; gap: 30px; margin-bottom: 34px; flex-wrap: wrap; }
+  .qp-ring-wrap { position: relative; width: 168px; height: 168px; flex-shrink: 0; }
+  .qp-ring-wrap svg circle.qp-ring-fg { transition: stroke-dashoffset .7s cubic-bezier(.4,0,.2,1); }
+  .qp-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .qp-ring-pct { font-size: 34px; font-weight: 800; line-height: 1; }
+  .qp-ring-frac { font-size: 12.5px; color: #8A7CA8; margin-top: 4px; }
+  .qp-hero-note { font-size: 14px; color: #6B5D8A; max-width: 300px; line-height: 1.5; }
+
+  .qp-section-head { display: flex; align-items: center; justify-content: space-between; margin: 30px 0 12px; }
+  .qp-section-head h3 { font-size: 15.5px; font-weight: 600; margin: 0; }
+  .qp-hint { font-size: 12px; color: #9A8CB5; }
+
+  .qp-task-row {
+    display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-bottom: 1px solid #EFE6FB;
+  }
+  .qp-check {
+    width: 21px; height: 21px; border-radius: 7px; border: 1.5px solid #D8C8F0; flex-shrink: 0;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s;
+    background: transparent;
+  }
+  .qp-check.done { background: #8B5CF6; border-color: #8B5CF6; }
+  .qp-check.done::after { content: '✓'; color: #FFFBF5; font-size: 13px; font-weight: 700; }
+  .qp-task-name { flex: 1; font-size: 14.5px; }
+  .qp-task-name.done { color: #9A8CB5; text-decoration: line-through; }
+  .qp-tag { font-size: 10.5px; color: #9A8CB5; background: #F3ECFC; border: 1px solid #E1D3F5; padding: 2px 7px; border-radius: 20px; }
+  .qp-del { background: none; border: none; color: #C3AEE0; cursor: pointer; font-size: 15px; padding: 4px; }
+  .qp-del:hover { color: #E8635F; }
+
+  .qp-addrow { display: flex; gap: 8px; margin-top: 12px; }
+  .qp-input {
+    background: #F3ECFC; border: 1px solid #E1D3F5; color: #2E2148; border-radius: 9px;
+    padding: 9px 12px; font-family: 'Inter', sans-serif; font-size: 13.5px; flex: 1; outline: none;
+  }
+  .qp-input:focus { border-color: #8B5CF6; }
+  .qp-addbtn {
+    background: #F5B700; border: none; color: #2E2148; font-weight: 700; font-size: 13.5px;
+    border-radius: 9px; padding: 9px 16px; cursor: pointer; white-space: nowrap;
+  }
+  .qp-addbtn:hover { background: #FFC933; }
+  .qp-addbtn.ghost { background: none; border: 1px solid #E1D3F5; color: #6B5D8A; }
+  .qp-addbtn.ghost:hover { border-color: #8B5CF6; color: #8B5CF6; }
+
+  .qp-empty { font-size: 13px; color: #9A8CB5; padding: 14px 4px; }
+
+  .qp-sliders { display: flex; flex-direction: column; gap: 20px; margin-top: 6px; }
+  .qp-slider-row .qp-slider-top { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 8px; }
+  .qp-slider-row .qp-slider-top .qp-sname { font-weight: 500; }
+  .qp-slider-row .qp-slider-top .qp-sval { font-weight: 700; font-family: 'Sora', sans-serif; }
+  .qp-slider-row input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 6px; border-radius: 4px; background: #EFE6FB; outline: none;
+  }
+  .qp-slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.15);
+  }
+
+  textarea.qp-input { resize: vertical; min-height: 64px; font-family: 'Inter', sans-serif; line-height: 1.5; }
+
+  /* ---- Tasks tab ---- */
+  .qp-note-box { background: #FFFFFF; border: 1px solid #ECE1FA; border-radius: 12px; padding: 14px 16px; font-size: 13px; color: #8A7CA8; line-height: 1.55; margin-bottom: 24px; }
+  .qp-note-box b { color: #6B5D8A; }
+
+  /* ---- Week / Month shared ---- */
+  .qp-controlbar { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+  .qp-controlbar label { font-size: 13px; color: #8A7CA8; }
+
+  .qp-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; margin-bottom: 30px; }
+  .qp-stat { border-left: 2px solid #E1D3F5; padding-left: 12px; }
+  .qp-stat-label { font-size: 12px; color: #8A7CA8; margin-bottom: 4px; }
+  .qp-stat-value { font-size: 22px; font-weight: 700; }
+  .qp-stat.accent { border-left-color: #8B5CF6; }
+
+  .qp-chart-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; margin-bottom: 30px; align-items: start; }
+  @media (max-width: 640px) { .qp-chart-grid { grid-template-columns: 1fr; } }
+  .qp-chart-box { background: #FFFFFF; border: 1px solid #ECE1FA; border-radius: 14px; padding: 18px; }
+  .qp-chart-box h4 { font-size: 13px; font-weight: 600; color: #6B5D8A; margin: 0 0 12px; }
+  .qp-chart-box canvas { max-height: 220px; }
+
+  .qp-week-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .qp-week-table th { text-align: left; font-size: 11.5px; color: #9A8CB5; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid #ECE1FA; }
+  .qp-week-table td { padding: 9px 8px; font-size: 13.5px; border-bottom: 1px solid #F3ECFC; }
+  .qp-week-table tr.today-row td { color: #8B5CF6; }
+  .qp-bar-cell { display: flex; align-items: center; gap: 8px; }
+  .qp-bar-track { width: 60px; height: 6px; border-radius: 4px; background: #EFE6FB; overflow: hidden; }
+  .qp-bar-fill { height: 100%; border-radius: 4px; }
+
+  /* ---- Calendar heatmap ---- */
+  .qp-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; }
+  .qp-cal-dow { font-size: 10.5px; color: #9A8CB5; text-align: center; padding-bottom: 4px; }
+  .qp-cal-cell {
+    aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 12px; cursor: pointer; border: 1px solid transparent; transition: border-color .15s;
+  }
+  .qp-cal-cell:hover { border-color: #2E2148; }
+  .qp-cal-cell.empty { visibility: hidden; }
+  .qp-cal-cell .qp-cal-daynum { font-weight: 600; }
+  .qp-cal-cell.nodata { background: #F3ECFC; color: #C3AEE0; }
+  .qp-cal-legend { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9A8CB5; margin: 10px 0 26px; }
+  .qp-cal-legend .qp-swatch { width: 22px; height: 8px; border-radius: 4px; }
+
+  .qp-loading { padding: 80px 20px; text-align: center; color: #9A8CB5; font-size: 14px; }
+</style>
+
+<div id="qp-root">
+  <div class="qp-shell">
+    <div class="qp-topline">
+      <div>
+        <div class="qp-title">Dailies<span>.</span></div>
+        <div class="qp-sub">Your habit tracker &amp; daily schedule</div>
+      </div>
+    </div>
+    <div class="qp-sysswitch" id="qp-sysswitch">
+      <button class="qp-sysbtn" data-system="fixed">Habit Tracker</button>
+      <button class="qp-sysbtn" data-system="flex">Daily Schedule</button>
+    </div>
+    <div class="qp-sysnote" id="qp-sysnote"></div>
+    <div class="qp-tabs" id="qp-tabs">
+      <button class="qp-tab" data-tab="today" data-system="fixed">Today</button>
+      <button class="qp-tab" data-tab="tasks" data-system="fixed">Habits</button>
+      <button class="qp-tab" data-tab="week" data-system="fixed">Week</button>
+      <button class="qp-tab" data-tab="month" data-system="fixed">Month</button>
+      <button class="qp-tab" data-tab="flex-day" data-system="flex">Today</button>
+      <button class="qp-tab" data-tab="flex-week" data-system="flex">Week</button>
+      <button class="qp-tab" data-tab="flex-month" data-system="flex">Month</button>
+    </div>
+    <div id="qp-content"><div class="qp-loading">Loading your planner…</div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const KEY = 'dailies_state_v1';
+  const root = document.getElementById('qp-root');
+  const content = document.getElementById('qp-content');
+  const tabsEl = document.getElementById('qp-tabs');
+
+  const MOOD_COLOR = '#EC6FA0';
+  const MOTIVATION_COLOR = '#8B5CF6';
+  const ENERGY_COLOR = '#E8A400';
+
+  let state = null;
+  let currentSystem = 'fixed';
+  let currentTab = 'today';
+  let viewDate = todayStr();
+  let weekStart = mostRecentSunday(todayStr());
+  let monthCursor = todayStr().slice(0,7); // YYYY-MM
+  let flexViewDate = todayStr();
+  let flexWeekStart = mostRecentSunday(todayStr());
+  let flexMonthCursor = todayStr().slice(0,7);
+  const charts = {};
+  let saveTimer = null;
+
+  // ---------- date helpers ----------
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function toISO(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function fromISO(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+  function todayStr(){ return toISO(new Date()); }
+  function addDays(s,n){ const d = fromISO(s); d.setDate(d.getDate()+n); return toISO(d); }
+  function mostRecentSunday(s){ const d = fromISO(s); d.setDate(d.getDate() - d.getDay()); return toISO(d); }
+  function dayShort(s){ return fromISO(s).toLocaleDateString('en-US',{weekday:'short'}); }
+  function dayLong(s){ return fromISO(s).toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}); }
+  function monthLabel(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long', year:'numeric'}); }
+  function daysInMonth(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m,0).getDate(); }
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+
+  // ---------- state ----------
+  function defaultState(){
+    return {
+      tasks: [
+        {id: uid(), name: 'Focused work sprint'},
+        {id: uid(), name: 'Review daily goals'},
+        {id: uid(), name: 'Exercise / outdoor walk'},
+        {id: uid(), name: 'Reflect on the day'},
+        {id: uid(), name: 'Plan tomorrow'},
+      ],
+      days: {},
+      flexDays: {}
+    };
+  }
+
+  function getDay(dateStr){
+    return state.days[dateStr] || {recurring:{}, custom:[], mood:null, motivation:null, energy:null, notes:''};
+  }
+  function ensureDay(dateStr){
+    if(!state.days[dateStr]) state.days[dateStr] = {recurring:{}, custom:[], mood:null, motivation:null, energy:null, notes:''};
+    return state.days[dateStr];
+  }
+  function stats(dateStr){
+    const d = getDay(dateStr);
+    const recurringDone = state.tasks.filter(t => d.recurring[t.id]).length;
+    const customDone = d.custom.filter(c => c.done).length;
+    const total = state.tasks.length + d.custom.length;
+    const done = recurringDone + customDone;
+    return { done, total, pct: total > 0 ? done/total : null };
+  }
+
+  function getFlexDay(dateStr){
+    if(!state.flexDays) state.flexDays = {};
+    return state.flexDays[dateStr] || {tasks:[], mood:null, motivation:null, energy:null, notes:''};
+  }
+  function ensureFlexDay(dateStr){
+    if(!state.flexDays) state.flexDays = {};
+    if(!state.flexDays[dateStr]) state.flexDays[dateStr] = {tasks:[], mood:null, motivation:null, energy:null, notes:''};
+    return state.flexDays[dateStr];
+  }
+  function flexStats(dateStr){
+    const d = getFlexDay(dateStr);
+    const total = d.tasks.length;
+    const done = d.tasks.filter(t=>t.done).length;
+    return { done, total, pct: total > 0 ? done/total : null };
+  }
+
+  // Storage abstraction: uses Claude's window.storage when running as a live
+  // artifact, and falls back to localStorage when opened as a standalone
+  // downloaded file (double-clicked, or added to a phone's home screen) where
+  // window.storage does not exist.
+  const hasCloudStorage = typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+  async function storageGet(key){
+    if(hasCloudStorage){
+      try { return await window.storage.get(key, false); } catch(e){ return null; }
+    }
+    try {
+      const v = localStorage.getItem(key);
+      return v == null ? null : { key, value: v };
+    } catch(e){ return null; }
+  }
+  async function storageSet(key, value){
+    if(hasCloudStorage){
+      try { await window.storage.set(key, value, false); } catch(e){ /* ignore */ }
+      return;
+    }
+    try { localStorage.setItem(key, value); } catch(e){ /* ignore */ }
+  }
+
+  async function load(){
+    try {
+      const res = await storageGet(KEY);
+      state = res && res.value ? JSON.parse(res.value) : defaultState();
+      if(!state.flexDays) state.flexDays = {};
+    } catch(e){
+      state = defaultState();
+    }
+    render();
+  }
+  function save(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { storageSet(KEY, JSON.stringify(state)); }, 200);
+  }
+
+  // ---------- rendering ----------
+  const sysSwitchEl = document.getElementById('qp-sysswitch');
+  const sysNoteEl = document.getElementById('qp-sysnote');
+  const SYS_NOTES = {
+    fixed: 'Same habits every day, plus room to add one-off items — best for a stable routine.',
+    flex: 'No recurring list — build each day\'s checklist from scratch. Best when your to-dos change constantly.'
+  };
+
+  function render(){
+    sysSwitchEl.querySelectorAll('.qp-sysbtn').forEach(b => b.classList.toggle('active', b.dataset.system === currentSystem));
+    sysNoteEl.textContent = SYS_NOTES[currentSystem];
+    tabsEl.querySelectorAll('.qp-tab').forEach(b => {
+      b.classList.toggle('qp-hidden', b.dataset.system !== currentSystem);
+      b.classList.toggle('active', b.dataset.tab === currentTab);
+    });
+    if(currentTab === 'today') content.innerHTML = renderToday();
+    else if(currentTab === 'tasks') content.innerHTML = renderTasks();
+    else if(currentTab === 'week') { content.innerHTML = renderWeek(); mountWeekCharts(); }
+    else if(currentTab === 'month') { content.innerHTML = renderMonth(); mountMonthChart(); }
+    else if(currentTab === 'flex-day') content.innerHTML = renderFlexDay();
+    else if(currentTab === 'flex-week') { content.innerHTML = renderFlexWeek(); mountFlexWeekCharts(); }
+    else if(currentTab === 'flex-month') { content.innerHTML = renderFlexMonth(); mountFlexMonthChart(); }
+  }
+
+  function ring(pct, size, stroke, color){
+    const r = (size - stroke) / 2;
+    const c = 2 * Math.PI * r;
+    const p = pct == null ? 0 : pct;
+    const offset = c * (1 - p);
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#EFE6FB" stroke-width="${stroke}"/>
+      <circle class="qp-ring-fg" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+        stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${offset}"
+        transform="rotate(-90 ${size/2} ${size/2})"/>
+    </svg>`;
+  }
+
+  function heatColor(pct){
+    if(pct == null) return null;
+    const stops = [[236,111,160],[245,183,0],[139,92,246]]; // coral -> yellow -> violet
+    let t = pct * 2, i = 0;
+    if(t > 1){ i = 1; t -= 1; }
+    const [r1,g1,b1] = stops[i], [r2,g2,b2] = stops[i+1];
+    const r = Math.round(r1 + (r2-r1)*t), g = Math.round(g1 + (g2-g1)*t), b = Math.round(b1 + (b2-b1)*t);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function renderToday(){
+    const d = getDay(viewDate);
+    const s = stats(viewDate);
+    const isToday = viewDate === todayStr();
+    const pctDisplay = s.total ? Math.round(s.pct*100) + '%' : '—';
+    const ringColor = s.pct == null ? '#D8C8F0' : heatColor(s.pct);
+
+    const recurringRows = state.tasks.length ? state.tasks.map(t => {
+      const done = !!d.recurring[t.id];
+      return `<div class="qp-task-row">
+        <div class="qp-check ${done?'done':''}" data-action="toggle-recurring" data-id="${t.id}"></div>
+        <div class="qp-task-name ${done?'done':''}">${escapeHtml(t.name)}</div>
+      </div>`;
+    }).join('') : `<div class="qp-empty">No habits yet — add some in the Habits tab.</div>`;
+
+    const customRows = d.custom.map(c => `
+      <div class="qp-task-row">
+        <div class="qp-check ${c.done?'done':''}" data-action="toggle-custom" data-id="${c.id}"></div>
+        <div class="qp-task-name ${c.done?'done':''}">${escapeHtml(c.name)}</div>
+        <span class="qp-tag">just today</span>
+        <button class="qp-del" data-action="del-custom" data-id="${c.id}">✕</button>
+      </div>`).join('');
+
+    return `
+      <div class="qp-daynav">
+        <button class="qp-iconbtn" data-action="day-prev">‹</button>
+        <div class="qp-daylabel">${dayLong(viewDate)} ${isToday ? '<span class="qp-datesub">Today</span>':''}</div>
+        <button class="qp-iconbtn" data-action="day-next">›</button>
+        <input type="date" class="qp-datepick" id="qp-datepick" value="${viewDate}">
+        ${isToday ? '' : `<button class="qp-todaybtn" data-action="day-today">Jump to today</button>`}
+      </div>
+
+      <div class="qp-hero">
+        <div class="qp-ring-wrap">
+          ${ring(s.pct, 168, 14, ringColor)}
+          <div class="qp-ring-center">
+            <div class="qp-ring-pct">${pctDisplay}</div>
+            <div class="qp-ring-frac">${s.total ? s.done + ' of ' + s.total + ' done' : 'no tasks yet'}</div>
+          </div>
+        </div>
+        <div class="qp-hero-note">Tick off your habits, add anything one-off for today, and log how you're feeling — it all rolls up into your Week and Month views automatically.</div>
+      </div>
+
+      <div class="qp-section-head"><h3>Habits</h3><span class="qp-hint">edit list in Habits tab</span></div>
+      ${recurringRows}
+
+      <div class="qp-section-head"><h3>Just for today</h3></div>
+      ${customRows}
+      <div class="qp-addrow">
+        <input class="qp-input" id="qp-custom-input" placeholder="Add a one-off task for today…" data-enter="add-custom">
+        <button class="qp-addbtn" data-action="add-custom">Add</button>
+      </div>
+
+      <div class="qp-section-head"><h3>Mindset check-in</h3></div>
+      <div class="qp-sliders">
+        ${sliderRow('mood', 'Mood', d.mood, MOOD_COLOR)}
+        ${sliderRow('motivation', 'Motivation', d.motivation, MOTIVATION_COLOR)}
+        ${sliderRow('energy', 'Energy', d.energy, ENERGY_COLOR)}
+      </div>
+
+      <div class="qp-section-head"><h3>Notes</h3></div>
+      <textarea class="qp-input" id="qp-notes" data-action="notes" placeholder="Anything worth remembering about today…">${escapeHtml(d.notes||'')}</textarea>
+    `;
+  }
+
+  function sliderRow(field, label, value, color){
+    const v = value == null ? 5 : value;
+    const displayVal = value == null ? '—' : value;
+    return `<div class="qp-slider-row">
+      <div class="qp-slider-top">
+        <span class="qp-sname">${label}</span>
+        <span class="qp-sval" style="color:${color}" id="qp-sval-${field}">${displayVal}</span>
+      </div>
+      <input type="range" min="1" max="10" step="1" value="${v}" data-field="${field}" data-action="slider">
+    </div>`;
+  }
+
+  function renderTasks(){
+    const rows = state.tasks.map(t => `
+      <div class="qp-task-row">
+        <input class="qp-input" style="padding:7px 10px; font-size:13.5px;" value="${escapeHtml(t.name)}" data-action="rename-task" data-id="${t.id}">
+        <button class="qp-del" data-action="del-task" data-id="${t.id}">✕</button>
+      </div>`).join('') || `<div class="qp-empty">No habits yet.</div>`;
+
+    return `
+      <div class="qp-note-box"><b>Habits</b> repeat every day and show up automatically in Today. <b>One-off tasks</b> (added from the Today tab) only count for that specific day. Both count toward your daily, weekly and monthly completion.</div>
+      <div class="qp-section-head"><h3>Your habits</h3></div>
+      ${rows}
+      <div class="qp-addrow">
+        <input class="qp-input" id="qp-task-input" placeholder="Add a habit…" data-enter="add-task">
+        <button class="qp-addbtn" data-action="add-task">Add</button>
+      </div>
+    `;
+  }
+
+  function renderWeek(){
+    const dates = Array.from({length:7}, (_,i) => addDays(weekStart, i));
+    const rowsData = dates.map(dt => ({ dt, s: stats(dt), d: getDay(dt) }));
+    const validPct = rowsData.map(r=>r.s.pct).filter(p=>p!=null);
+    const avgPct = validPct.length ? validPct.reduce((a,b)=>a+b,0)/validPct.length : 0;
+    const totalDone = rowsData.reduce((a,r)=>a+r.s.done,0);
+    const moods = rowsData.map(r=>r.d.mood).filter(v=>v!=null);
+    const motivs = rowsData.map(r=>r.d.motivation).filter(v=>v!=null);
+    const energies = rowsData.map(r=>r.d.energy).filter(v=>v!=null);
+    const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+    let bestDay = '—';
+    if(validPct.length){
+      const best = rowsData.reduce((a,b) => (b.s.pct!=null && (a.s.pct==null || b.s.pct>a.s.pct)) ? b : a);
+      bestDay = dayShort(best.dt);
+    }
+
+    const tableRows = rowsData.map(r => {
+      const pct = r.s.pct;
+      const pctLabel = pct==null ? '—' : Math.round(pct*100)+'%';
+      const barColor = pct==null ? '#D8C8F0' : heatColor(pct);
+      const isToday = r.dt === todayStr();
+      return `<tr class="${isToday?'today-row':''}">
+        <td style="white-space:nowrap;">${dayShort(r.dt)}<br><span style="color:#9A8CB5; font-size:11px;">${r.dt.slice(5)}</span></td>
+        <td><div class="qp-bar-cell"><div class="qp-bar-track"><div class="qp-bar-fill" style="width:${pct?Math.round(pct*100):0}%; background:${barColor}"></div></div>${pctLabel}</div></td>
+        <td>${r.d.mood ?? '—'}</td>
+        <td>${r.d.motivation ?? '—'}</td>
+        <td>${r.d.energy ?? '—'}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <div class="qp-controlbar">
+        <label>Week starting</label>
+        <input type="date" class="qp-datepick" id="qp-week-input" value="${weekStart}">
+        <button class="qp-todaybtn" data-action="week-this">This week</button>
+      </div>
+
+      <div class="qp-stat-grid">
+        <div class="qp-stat accent"><div class="qp-stat-label">Avg completion</div><div class="qp-stat-value">${Math.round(avgPct*100)}%</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Tasks done</div><div class="qp-stat-value">${totalDone}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Best day</div><div class="qp-stat-value">${bestDay}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg mood</div><div class="qp-stat-value" style="color:${MOOD_COLOR}">${avg(moods)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg motivation</div><div class="qp-stat-value" style="color:${MOTIVATION_COLOR}">${avg(motivs)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg energy</div><div class="qp-stat-value" style="color:${ENERGY_COLOR}">${avg(energies)}</div></div>
+      </div>
+
+      <table class="qp-week-table">
+        <thead><tr><th>Day</th><th>Completion</th><th>Mood</th><th>Motivation</th><th>Energy</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+
+      <div class="qp-chart-grid">
+        <div class="qp-chart-box"><h4>Daily completion</h4><canvas id="qp-week-bar"></canvas></div>
+        <div class="qp-chart-box"><h4>Mindset tracker</h4><canvas id="qp-week-line"></canvas></div>
+      </div>
+    `;
+  }
+
+  function mountWeekCharts(){
+    if(!window.Chart) return;
+    const dates = Array.from({length:7}, (_,i) => addDays(weekStart, i));
+    const labels = dates.map(dayShort);
+    const pcts = dates.map(dt => { const p = stats(dt).pct; return p==null ? 0 : Math.round(p*100); });
+    const moods = dates.map(dt => getDay(dt).mood);
+    const motivs = dates.map(dt => getDay(dt).motivation);
+    const energies = dates.map(dt => getDay(dt).energy);
+
+    if(charts.bar) charts.bar.destroy();
+    const barCtx = document.getElementById('qp-week-bar');
+    charts.bar = new Chart(barCtx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: pcts, backgroundColor: MOTIVATION_COLOR, borderRadius: 6, maxBarThickness: 30 }] },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { min:0, max:100, ticks: { color:'#9A8CB5', callback:v=>v+'%' }, grid: { color:'#ECE1FA' } },
+          x: { ticks: { color:'#8A7CA8' }, grid: { display:false } }
+        }
+      }
+    });
+
+    if(charts.line) charts.line.destroy();
+    const lineCtx = document.getElementById('qp-week-line');
+    charts.line = new Chart(lineCtx, {
+      type: 'line',
+      data: { labels, datasets: [
+        { label:'Mood', data:moods, borderColor:MOOD_COLOR, backgroundColor:MOOD_COLOR, tension:.35, spanGaps:true },
+        { label:'Motivation', data:motivs, borderColor:MOTIVATION_COLOR, backgroundColor:MOTIVATION_COLOR, tension:.35, spanGaps:true },
+        { label:'Energy', data:energies, borderColor:ENERGY_COLOR, backgroundColor:ENERGY_COLOR, tension:.35, spanGaps:true },
+      ]},
+      options: {
+        plugins: { legend: { labels: { color:'#6B5D8A', boxWidth:10, font:{size:11} } } },
+        scales: {
+          y: { min:0, max:10, ticks: { color:'#9A8CB5' }, grid: { color:'#ECE1FA' } },
+          x: { ticks: { color:'#8A7CA8' }, grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  function renderMonth(){
+    const [y,m] = monthCursor.split('-').map(Number);
+    const nDays = daysInMonth(monthCursor);
+    const dates = Array.from({length:nDays}, (_,i) => `${monthCursor}-${pad(i+1)}`);
+    const firstDow = fromISO(dates[0]).getDay();
+
+    const validPct = dates.map(dt=>stats(dt).pct).filter(p=>p!=null);
+    const avgPct = validPct.length ? validPct.reduce((a,b)=>a+b,0)/validPct.length : 0;
+    const totalDone = dates.reduce((a,dt)=>a+stats(dt).done,0);
+    const moods = dates.map(dt=>getDay(dt).mood).filter(v=>v!=null);
+    const motivs = dates.map(dt=>getDay(dt).motivation).filter(v=>v!=null);
+    const energies = dates.map(dt=>getDay(dt).energy).filter(v=>v!=null);
+    const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+
+    const dow = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="qp-cal-dow">${d}</div>`).join('');
+    const blanks = Array.from({length:firstDow}, ()=>`<div class="qp-cal-cell empty"></div>`).join('');
+    const cells = dates.map((dt,i) => {
+      const p = stats(dt).pct;
+      const bg = p==null ? null : heatColor(p);
+      const isToday = dt === todayStr();
+      const style = p==null ? '' : `background:${bg}; color:#FFFBF5;`;
+      return `<div class="qp-cal-cell ${p==null?'nodata':''}" style="${style} ${isToday?'box-shadow:0 0 0 2px #2E2148 inset;':''}" data-action="cal-jump" data-date="${dt}">
+        <div class="qp-cal-daynum">${i+1}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="qp-controlbar">
+        <label>Month</label>
+        <input type="month" class="qp-datepick" id="qp-month-input" value="${monthCursor}">
+        <button class="qp-todaybtn" data-action="month-this">This month</button>
+      </div>
+
+      <div class="qp-stat-grid">
+        <div class="qp-stat accent"><div class="qp-stat-label">Avg completion</div><div class="qp-stat-value">${Math.round(avgPct*100)}%</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Tasks done</div><div class="qp-stat-value">${totalDone}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg mood</div><div class="qp-stat-value" style="color:${MOOD_COLOR}">${avg(moods)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg motivation</div><div class="qp-stat-value" style="color:${MOTIVATION_COLOR}">${avg(motivs)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg energy</div><div class="qp-stat-value" style="color:${ENERGY_COLOR}">${avg(energies)}</div></div>
+      </div>
+
+      <div class="qp-section-head"><h3>${monthLabel(monthCursor)}</h3><span class="qp-hint">tap a day to open it</span></div>
+      <div class="qp-cal">${dow}${blanks}${cells}</div>
+      <div class="qp-cal-legend">
+        <span>Low</span><div class="qp-swatch" style="background:${heatColor(0)}"></div>
+        <div class="qp-swatch" style="background:${heatColor(0.5)}"></div>
+        <div class="qp-swatch" style="background:${heatColor(1)}"></div><span>High</span>
+        <span style="margin-left:10px;"><span class="qp-swatch" style="background:#F3ECFC; border:1px solid #E1D3F5; display:inline-block;"></span> no tasks logged</span>
+      </div>
+
+      <div class="qp-chart-box" style="margin-top:10px;"><h4>Completion trend this month</h4><canvas id="qp-month-line"></canvas></div>
+    `;
+  }
+
+  function mountMonthChart(){
+    if(!window.Chart) return;
+    const nDays = daysInMonth(monthCursor);
+    const dates = Array.from({length:nDays}, (_,i) => `${monthCursor}-${pad(i+1)}`);
+    const labels = dates.map((_,i)=>i+1);
+    const pcts = dates.map(dt => { const p = stats(dt).pct; return p==null ? null : Math.round(p*100); });
+
+    if(charts.monthLine) charts.monthLine.destroy();
+    const ctx = document.getElementById('qp-month-line');
+    charts.monthLine = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ data: pcts, borderColor: MOTIVATION_COLOR, backgroundColor: 'rgba(139,92,246,.15)', fill:true, tension:.3, spanGaps:true, pointRadius:2 }] },
+      options: {
+        plugins: { legend: { display:false } },
+        scales: {
+          y: { min:0, max:100, ticks: { color:'#9A8CB5', callback:v=>v+'%' }, grid: { color:'#ECE1FA' } },
+          x: { ticks: { color:'#8A7CA8', maxRotation:0 }, grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- flexible system: day/week/month ----------
+  function renderFlexDay(){
+    const d = getFlexDay(flexViewDate);
+    const s = flexStats(flexViewDate);
+    const isToday = flexViewDate === todayStr();
+    const pctDisplay = s.total ? Math.round(s.pct*100) + '%' : '—';
+    const ringColor = s.pct == null ? '#D8C8F0' : heatColor(s.pct);
+
+    const taskRows = d.tasks.length ? d.tasks.map(t => `
+      <div class="qp-task-row">
+        <div class="qp-check ${t.done?'done':''}" data-action="toggle-flextask" data-id="${t.id}"></div>
+        <div class="qp-task-name ${t.done?'done':''}">${escapeHtml(t.name)}</div>
+        ${t.category ? `<span class="qp-tag">${escapeHtml(t.category)}</span>` : ''}
+        <button class="qp-del" data-action="del-flextask" data-id="${t.id}">✕</button>
+      </div>`).join('') : `<div class="qp-empty">Nothing added yet — build today's list below.</div>`;
+
+    return `
+      <div class="qp-daynav">
+        <button class="qp-iconbtn" data-action="flex-day-prev">‹</button>
+        <div class="qp-daylabel">${dayLong(flexViewDate)} ${isToday ? '<span class="qp-datesub">Today</span>':''}</div>
+        <button class="qp-iconbtn" data-action="flex-day-next">›</button>
+        <input type="date" class="qp-datepick" id="qp-flex-datepick" value="${flexViewDate}">
+        ${isToday ? '' : `<button class="qp-todaybtn" data-action="flex-day-today">Jump to today</button>`}
+      </div>
+
+      <div class="qp-hero">
+        <div class="qp-ring-wrap">
+          ${ring(s.pct, 168, 14, ringColor)}
+          <div class="qp-ring-center">
+            <div class="qp-ring-pct">${pctDisplay}</div>
+            <div class="qp-ring-frac">${s.total ? s.done + ' of ' + s.total + ' done' : 'no tasks yet'}</div>
+          </div>
+        </div>
+        <div class="qp-hero-note">No fixed list here — add whatever this day actually needs, tick things off, and it still rolls up into your Week and Month.</div>
+      </div>
+
+      <div class="qp-section-head"><h3>Today's schedule</h3></div>
+      ${taskRows}
+      <div class="qp-addrow">
+        <input class="qp-input" id="qp-flex-task-input" placeholder="Task name…" data-enter="add-flextask" style="flex:2;">
+        <input class="qp-input" id="qp-flex-cat-input" placeholder="Category (optional)" data-enter="add-flextask" style="flex:1;">
+        <button class="qp-addbtn" data-action="add-flextask">Add</button>
+      </div>
+
+      <div class="qp-section-head"><h3>Mindset check-in</h3></div>
+      <div class="qp-sliders">
+        ${sliderRow('flex-mood', 'Mood', d.mood, MOOD_COLOR)}
+        ${sliderRow('flex-motivation', 'Motivation', d.motivation, MOTIVATION_COLOR)}
+        ${sliderRow('flex-energy', 'Energy', d.energy, ENERGY_COLOR)}
+      </div>
+
+      <div class="qp-section-head"><h3>Notes</h3></div>
+      <textarea class="qp-input" id="qp-flex-notes" data-action="flex-notes" placeholder="Anything worth remembering about today…">${escapeHtml(d.notes||'')}</textarea>
+    `;
+  }
+
+  function renderFlexWeek(){
+    const dates = Array.from({length:7}, (_,i) => addDays(flexWeekStart, i));
+    const rowsData = dates.map(dt => ({ dt, s: flexStats(dt), d: getFlexDay(dt) }));
+    const validPct = rowsData.map(r=>r.s.pct).filter(p=>p!=null);
+    const avgPct = validPct.length ? validPct.reduce((a,b)=>a+b,0)/validPct.length : 0;
+    const totalDone = rowsData.reduce((a,r)=>a+r.s.done,0);
+    const moods = rowsData.map(r=>r.d.mood).filter(v=>v!=null);
+    const motivs = rowsData.map(r=>r.d.motivation).filter(v=>v!=null);
+    const energies = rowsData.map(r=>r.d.energy).filter(v=>v!=null);
+    const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+    let bestDay = '—';
+    if(validPct.length){
+      const best = rowsData.reduce((a,b) => (b.s.pct!=null && (a.s.pct==null || b.s.pct>a.s.pct)) ? b : a);
+      bestDay = dayShort(best.dt);
+    }
+
+    const tableRows = rowsData.map(r => {
+      const pct = r.s.pct;
+      const pctLabel = pct==null ? '—' : Math.round(pct*100)+'%';
+      const barColor = pct==null ? '#D8C8F0' : heatColor(pct);
+      const isToday = r.dt === todayStr();
+      return `<tr class="${isToday?'today-row':''}">
+        <td style="white-space:nowrap;">${dayShort(r.dt)}<br><span style="color:#9A8CB5; font-size:11px;">${r.dt.slice(5)}</span></td>
+        <td><div class="qp-bar-cell"><div class="qp-bar-track"><div class="qp-bar-fill" style="width:${pct?Math.round(pct*100):0}%; background:${barColor}"></div></div>${pctLabel}</div></td>
+        <td>${r.d.mood ?? '—'}</td>
+        <td>${r.d.motivation ?? '—'}</td>
+        <td>${r.d.energy ?? '—'}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <div class="qp-controlbar">
+        <label>Week starting</label>
+        <input type="date" class="qp-datepick" id="qp-flex-week-input" value="${flexWeekStart}">
+        <button class="qp-todaybtn" data-action="flex-week-this">This week</button>
+      </div>
+
+      <div class="qp-stat-grid">
+        <div class="qp-stat accent"><div class="qp-stat-label">Avg completion</div><div class="qp-stat-value">${Math.round(avgPct*100)}%</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Tasks done</div><div class="qp-stat-value">${totalDone}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Best day</div><div class="qp-stat-value">${bestDay}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg mood</div><div class="qp-stat-value" style="color:${MOOD_COLOR}">${avg(moods)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg motivation</div><div class="qp-stat-value" style="color:${MOTIVATION_COLOR}">${avg(motivs)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg energy</div><div class="qp-stat-value" style="color:${ENERGY_COLOR}">${avg(energies)}</div></div>
+      </div>
+
+      <table class="qp-week-table">
+        <thead><tr><th>Day</th><th>Completion</th><th>Mood</th><th>Motivation</th><th>Energy</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+
+      <div class="qp-chart-grid">
+        <div class="qp-chart-box"><h4>Daily completion</h4><canvas id="qp-flexweek-bar"></canvas></div>
+        <div class="qp-chart-box"><h4>Mindset tracker</h4><canvas id="qp-flexweek-line"></canvas></div>
+      </div>
+    `;
+  }
+
+  function mountFlexWeekCharts(){
+    if(!window.Chart) return;
+    const dates = Array.from({length:7}, (_,i) => addDays(flexWeekStart, i));
+    const labels = dates.map(dayShort);
+    const pcts = dates.map(dt => { const p = flexStats(dt).pct; return p==null ? 0 : Math.round(p*100); });
+    const moods = dates.map(dt => getFlexDay(dt).mood);
+    const motivs = dates.map(dt => getFlexDay(dt).motivation);
+    const energies = dates.map(dt => getFlexDay(dt).energy);
+
+    if(charts.flexBar) charts.flexBar.destroy();
+    const barCtx = document.getElementById('qp-flexweek-bar');
+    charts.flexBar = new Chart(barCtx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: pcts, backgroundColor: MOTIVATION_COLOR, borderRadius: 6, maxBarThickness: 30 }] },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { min:0, max:100, ticks: { color:'#9A8CB5', callback:v=>v+'%' }, grid: { color:'#ECE1FA' } },
+          x: { ticks: { color:'#8A7CA8' }, grid: { display:false } }
+        }
+      }
+    });
+
+    if(charts.flexLine) charts.flexLine.destroy();
+    const lineCtx = document.getElementById('qp-flexweek-line');
+    charts.flexLine = new Chart(lineCtx, {
+      type: 'line',
+      data: { labels, datasets: [
+        { label:'Mood', data:moods, borderColor:MOOD_COLOR, backgroundColor:MOOD_COLOR, tension:.35, spanGaps:true },
+        { label:'Motivation', data:motivs, borderColor:MOTIVATION_COLOR, backgroundColor:MOTIVATION_COLOR, tension:.35, spanGaps:true },
+        { label:'Energy', data:energies, borderColor:ENERGY_COLOR, backgroundColor:ENERGY_COLOR, tension:.35, spanGaps:true },
+      ]},
+      options: {
+        plugins: { legend: { labels: { color:'#6B5D8A', boxWidth:10, font:{size:11} } } },
+        scales: {
+          y: { min:0, max:10, ticks: { color:'#9A8CB5' }, grid: { color:'#ECE1FA' } },
+          x: { ticks: { color:'#8A7CA8' }, grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  function renderFlexMonth(){
+    const [y,m] = flexMonthCursor.split('-').map(Number);
+    const nDays = daysInMonth(flexMonthCursor);
+    const dates = Array.from({length:nDays}, (_,i) => `${flexMonthCursor}-${pad(i+1)}`);
+    const firstDow = fromISO(dates[0]).getDay();
+
+    const validPct = dates.map(dt=>flexStats(dt).pct).filter(p=>p!=null);
+    const avgPct = validPct.length ? validPct.reduce((a,b)=>a+b,0)/validPct.length : 0;
+    const totalDone = dates.reduce((a,dt)=>a+flexStats(dt).done,0);
+    const moods = dates.map(dt=>getFlexDay(dt).mood).filter(v=>v!=null);
+    const motivs = dates.map(dt=>getFlexDay(dt).motivation).filter(v=>v!=null);
+    const energies = dates.map(dt=>getFlexDay(dt).energy).filter(v=>v!=null);
+    const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+
+    const dow = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="qp-cal-dow">${d}</div>`).join('');
+    const blanks = Array.from({length:firstDow}, ()=>`<div class="qp-cal-cell empty"></div>`).join('');
+    const cells = dates.map((dt,i) => {
+      const p = flexStats(dt).pct;
+      const bg = p==null ? null : heatColor(p);
+      const isToday = dt === todayStr();
+      const style = p==null ? '' : `background:${bg}; color:#FFFBF5;`;
+      return `<div class="qp-cal-cell ${p==null?'nodata':''}" style="${style} ${isToday?'box-shadow:0 0 0 2px #2E2148 inset;':''}" data-action="flex-cal-jump" data-date="${dt}">
+        <div class="qp-cal-daynum">${i+1}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="qp-controlbar">
+        <label>Month</label>
+        <input type="month" class="qp-datepick" id="qp-flex-month-input" value="${flexMonthCursor}">
+        <button class="qp-todaybtn" data-action="flex-month-this">This month</button>
+      </div>
+
+      <div class="qp-stat-grid">
+        <div class="qp-stat accent"><div class="qp-stat-label">Avg completion</div><div class="qp-stat-value">${Math.round(avgPct*100)}%</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Tasks done</div><div class="qp-stat-value">${totalDone}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg mood</div><div class="qp-stat-value" style="color:${MOOD_COLOR}">${avg(moods)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg motivation</div><div class="qp-stat-value" style="color:${MOTIVATION_COLOR}">${avg(motivs)}</div></div>
+        <div class="qp-stat"><div class="qp-stat-label">Avg energy</div><div class="qp-stat-value" style="color:${ENERGY_COLOR}">${avg(energies)}</div></div>
+      </div>
+
+      <div class="qp-section-head"><h3>${monthLabel(flexMonthCursor)}</h3><span class="qp-hint">tap a day to open it</span></div>
+      <div class="qp-cal">${dow}${blanks}${cells}</div>
+      <div class="qp-cal-legend">
+        <span>Low</span><div class="qp-swatch" style="background:${heatColor(0)}"></div>
+        <div class="qp-swatch" style="background:${heatColor(0.5)}"></div>
+        <div class="qp-swatch" style="background:${heatColor(1)}"></div><span>High</span>
+        <span style="margin-left:10px;"><span class="qp-swatch" style="background:#F3ECFC; border:1px solid #E1D3F5; display:inline-block;"></span> no tasks logged</span>
+      </div>
+
+      <div class="qp-chart-box" style="margin-top:10px;"><h4>Completion trend this month</h4><canvas id="qp-flexmonth-line"></canvas></div>
+    `;
+  }
+
+  function mountFlexMonthChart(){
+    if(!window.Chart) return;
+    const nDays = daysInMonth(flexMonthCursor);
+    const dates = Array.from({length:nDays}, (_,i) => `${flexMonthCursor}-${pad(i+1)}`);
+    const labels = dates.map((_,i)=>i+1);
+    const pcts = dates.map(dt => { const p = flexStats(dt).pct; return p==null ? null : Math.round(p*100); });
+
+    if(charts.flexMonthLine) charts.flexMonthLine.destroy();
+    const ctx = document.getElementById('qp-flexmonth-line');
+    charts.flexMonthLine = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ data: pcts, borderColor: MOTIVATION_COLOR, backgroundColor: 'rgba(139,92,246,.15)', fill:true, tension:.3, spanGaps:true, pointRadius:2 }] },
+      options: {
+        plugins: { legend: { display:false } },
+        scales: {
+          y: { min:0, max:100, ticks: { color:'#9A8CB5', callback:v=>v+'%' }, grid: { color:'#ECE1FA' } },
+          x: { ticks: { color:'#8A7CA8', maxRotation:0 }, grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  // ---------- events ----------
+  sysSwitchEl.addEventListener('click', e => {
+    const btn = e.target.closest('.qp-sysbtn');
+    if(!btn) return;
+    currentSystem = btn.dataset.system;
+    currentTab = currentSystem === 'fixed' ? 'today' : 'flex-day';
+    render();
+  });
+
+  tabsEl.addEventListener('click', e => {
+    const btn = e.target.closest('.qp-tab');
+    if(!btn) return;
+    currentTab = btn.dataset.tab;
+    render();
+  });
+
+  content.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if(!el) return;
+    const action = el.dataset.action;
+
+    if(action === 'day-prev'){ viewDate = addDays(viewDate,-1); render(); }
+    else if(action === 'day-next'){ viewDate = addDays(viewDate,1); render(); }
+    else if(action === 'day-today'){ viewDate = todayStr(); render(); }
+    else if(action === 'toggle-recurring'){
+      const day = ensureDay(viewDate);
+      day.recurring[el.dataset.id] = !day.recurring[el.dataset.id];
+      save(); render();
+    }
+    else if(action === 'toggle-custom'){
+      const day = ensureDay(viewDate);
+      const c = day.custom.find(x=>x.id===el.dataset.id);
+      if(c){ c.done = !c.done; save(); render(); }
+    }
+    else if(action === 'del-custom'){
+      const day = ensureDay(viewDate);
+      day.custom = day.custom.filter(x=>x.id!==el.dataset.id);
+      save(); render();
+    }
+    else if(action === 'add-custom'){ addCustomTask(); }
+    else if(action === 'add-task'){ addRecurringTask(); }
+    else if(action === 'del-task'){
+      state.tasks = state.tasks.filter(t=>t.id!==el.dataset.id);
+      save(); render();
+    }
+    else if(action === 'week-this'){ weekStart = mostRecentSunday(todayStr()); render(); }
+    else if(action === 'month-this'){ monthCursor = todayStr().slice(0,7); render(); }
+    else if(action === 'cal-jump'){ viewDate = el.dataset.date; currentTab = 'today'; render(); }
+    else if(action === 'flex-day-prev'){ flexViewDate = addDays(flexViewDate,-1); render(); }
+    else if(action === 'flex-day-next'){ flexViewDate = addDays(flexViewDate,1); render(); }
+    else if(action === 'flex-day-today'){ flexViewDate = todayStr(); render(); }
+    else if(action === 'toggle-flextask'){
+      const day = ensureFlexDay(flexViewDate);
+      const t = day.tasks.find(x=>x.id===el.dataset.id);
+      if(t){ t.done = !t.done; save(); render(); }
+    }
+    else if(action === 'del-flextask'){
+      const day = ensureFlexDay(flexViewDate);
+      day.tasks = day.tasks.filter(x=>x.id!==el.dataset.id);
+      save(); render();
+    }
+    else if(action === 'add-flextask'){ addFlexTask(); }
+    else if(action === 'flex-week-this'){ flexWeekStart = mostRecentSunday(todayStr()); render(); }
+    else if(action === 'flex-month-this'){ flexMonthCursor = todayStr().slice(0,7); render(); }
+    else if(action === 'flex-cal-jump'){ flexViewDate = el.dataset.date; currentTab = 'flex-day'; render(); }
+  });
+
+  content.addEventListener('keydown', e => {
+    if(e.key !== 'Enter') return;
+    const el = e.target.closest('[data-enter]');
+    if(!el) return;
+    if(el.dataset.enter === 'add-custom') addCustomTask();
+    else if(el.dataset.enter === 'add-task') addRecurringTask();
+    else if(el.dataset.enter === 'add-flextask') addFlexTask();
+  });
+
+  function addFlexTask(){
+    const input = document.getElementById('qp-flex-task-input');
+    const catInput = document.getElementById('qp-flex-cat-input');
+    const name = input.value.trim();
+    if(!name) return;
+    const day = ensureFlexDay(flexViewDate);
+    day.tasks.push({ id: uid(), name, category: catInput.value.trim(), done: false });
+    save(); render();
+  }
+
+  function addCustomTask(){
+    const input = document.getElementById('qp-custom-input');
+    const name = input.value.trim();
+    if(!name) return;
+    const day = ensureDay(viewDate);
+    day.custom.push({ id: uid(), name, done: false });
+    save(); render();
+  }
+  function addRecurringTask(){
+    const input = document.getElementById('qp-task-input');
+    const name = input.value.trim();
+    if(!name) return;
+    state.tasks.push({ id: uid(), name });
+    save(); render();
+  }
+
+  content.addEventListener('input', e => {
+    if(e.target.dataset.action === 'slider'){
+      const field = e.target.dataset.field;
+      const val = Number(e.target.value);
+      const out = document.getElementById('qp-sval-'+field);
+      if(out) out.textContent = val;
+    }
+  });
+  content.addEventListener('change', e => {
+    if(e.target.dataset.action === 'slider'){
+      const field = e.target.dataset.field;
+      if(field.startsWith('flex-')){
+        const realField = field.slice(5);
+        const day = ensureFlexDay(flexViewDate);
+        day[realField] = Number(e.target.value);
+      } else {
+        const day = ensureDay(viewDate);
+        day[field] = Number(e.target.value);
+      }
+      save();
+    }
+    else if(e.target.id === 'qp-datepick'){ viewDate = e.target.value; render(); }
+    else if(e.target.id === 'qp-week-input'){ weekStart = e.target.value; render(); }
+    else if(e.target.id === 'qp-month-input'){ monthCursor = e.target.value; render(); }
+    else if(e.target.id === 'qp-flex-datepick'){ flexViewDate = e.target.value; render(); }
+    else if(e.target.id === 'qp-flex-week-input'){ flexWeekStart = e.target.value; render(); }
+    else if(e.target.id === 'qp-flex-month-input'){ flexMonthCursor = e.target.value; render(); }
+    else if(e.target.dataset.action === 'rename-task'){
+      const t = state.tasks.find(x=>x.id===e.target.dataset.id);
+      if(t){ t.name = e.target.value.trim() || t.name; save(); }
+    }
+  });
+  content.addEventListener('input', e => {
+    if(e.target.id === 'qp-notes'){
+      const day = ensureDay(viewDate);
+      day.notes = e.target.value;
+      save();
+    }
+    else if(e.target.id === 'qp-flex-notes'){
+      const day = ensureFlexDay(flexViewDate);
+      day.notes = e.target.value;
+      save();
+    }
+  });
+
+  load();
+})();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (err) { console.warn('SW registration failed:', err); });
+    });
+  }
+</script>
+</body>
+</html>
